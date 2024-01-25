@@ -139,7 +139,7 @@
 
         window.rio.addInteraction(selection);
         console.log(selection);
-        window.rio.on('select', showInfo);
+        window.rio.on('pointermove', showInfo);
         // window.rio.on('change', clear);
         const info = document.getElementById('info'); 
         function showInfo(event) {
