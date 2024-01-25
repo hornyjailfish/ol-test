@@ -7,14 +7,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
-<body style="width: 100vw; height: 100vh; margin: 0; padding: 0; overflow: hidden;">
+<body style="width: 100vw; height: 100vh; margin: 0; padding: 0;">
     <script type="module">
         // Importing necessary modules from esm, a CDN for NPM packages that provides ES Module versions of the packages
         import {Map, View} from "https://esm.sh/ol";
         import {Vector as VectorLayer, VectorTile as VectorTileLayer} from "https://esm.sh/ol/layer";
         import {VectorTile as VectorTileSource, Vector as VectorSource} from "https://esm.sh/ol/source";
         import {Style, Stroke, Fill} from "https://esm.sh/ol/style";
-        import {useGeographic} from "https://esm.sh/ol/proj";
+        import {Select } from "https://esm.sh/ol/interaction";
+        import { pointerMove } from "https://esm.sh/ol/events/condition";
         import GeoJSON from "https://esm.sh/ol/format/GeoJSON";
 
         const wall_style = new Style({
@@ -41,11 +42,11 @@
 
         const inner_style = new Style({
             stroke: new Stroke({
-                color: "rgba(0, 200, 200, 0.5)",
-                width: 2,
+                color: "rgba(0, 200, 200, 0.1)",
+                width: 0,
             }),
             fill: new Fill({
-                color: "rgba(0, 200, 200, 0.2)",
+                color: "rgba(0, 200, 200, 0.3)",
             }),
             zIndex: 100,
         });
@@ -53,10 +54,11 @@
         // Create a source and layer for your indoor map using your GeoJSON
         // url should be valid so that it can be accessed by the browser
         const out = new VectorLayer({
+            className: "outside",
             declutter: true,
             source: new VectorSource({
                 format: new GeoJSON(),
-                url: "/static/outside.geojson",
+                url: "/static/outside.json",
             }),
             style: function (feature) {
                 return outter_style;
@@ -64,8 +66,9 @@
         });
 
         const wall = new VectorLayer({
+            className: "walls",
             source: new VectorSource({
-                url: "/static/walls.geojson",
+                url: "/static/walls.json",
                 format: new GeoJSON(),
             }),
             style: function (feature) {
@@ -74,15 +77,26 @@
         });
 
         const indoorSource = new VectorSource({
-            url: "/static/try_it.geojson",
+            url: "/static/try_it.json",
             // url: "/static/test.geojson",
             format: new GeoJSON(),
         });
         const indoorLayer = new VectorLayer({
+            className: "level1",
             source: indoorSource,
             style: function (feature) {
                 return inner_style;
             },
+        });
+
+        const selectStyle = new Style({
+            fill: new Fill({
+                color: "rgba(0, 200, 200, 0.2)",
+            }),
+            stroke: new Stroke({
+                color: "rgba(255, 255, 255, 0.7)",
+                width: 2,
+            }),
         });
 
         // I add this to window because it ez to debug
@@ -104,14 +118,49 @@
                     7540907.198797603
                 ],
                 constrainOnlyCenter: true,
-                // okish zoom level
+                // ok'ish zoom level
                 minZoom: 16,
                 maxZoom: 21,
             }),
             // Include any additional map controls and interactions you need
+            // interactions: [
+            //     new Select({
+            //     layers: [indoorLayer],
+            //     style: selectStyle,
+            // })
+            // ]
         });
+        
+        const selection = new Select({
+            layers: [indoorLayer],
+            toggleCondition: pointerMove,
+            style: selectStyle
+        });
+
+        window.rio.addInteraction(selection);
+        console.log(selection);
+        window.rio.on('select', showInfo);
+        // window.rio.on('change', clear);
+        const info = document.getElementById('info'); 
+        function showInfo(event) {
+            const t = window.rio.get(event.target);
+            // console.log(event.target.features)
+            const features = window.rio.getFeaturesAtPixel(event.pixel, {
+                layerFilter: (layer) => {  return layer.className_ === 'level1' }
+            });
+            if (features.length == 0) {
+                info.innerText = '';
+                // features[0].setStyle(selectStyle);
+                return;
+            }
+            features[0].setStyle(selectStyle);
+            const properties = features[0].getProperties().name;
+            info.innerText = properties;
+        }
     </script>
-    <div id="canvas" style="width:100%;height:100%">
+    <div id="canvas" style="width:100%;height:90%">
+    </div>
+    <div id="info" style="width:100%;height:10%;font-size:20px;text-align:center">
     </div>
 </body>
 
