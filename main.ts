@@ -11,7 +11,7 @@ import {
 const app = new Hono();
 
 app.use("/static/*", serveStatic({ root: "./" }));
-// app.use("/public/*", serveStatic({ root: "./" }));
+app.use("/public/*", serveStatic({ root: "./" }));
 // app.use("/css/*", serveStatic({ root: "./" }));
 
 // TODO: handle stuff here
